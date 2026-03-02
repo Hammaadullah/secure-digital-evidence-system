@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evidan</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body { background: #000; }
+  </style>
+</head>
+
+<body class="text-white font-sans">
+
+<!-- ================= AUTH MODAL ================= -->
+<div id="authModal"
+     class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center z-[999]">
+
+  <div class="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-3xl shadow-2xl p-8 relative">
+
+    <button onclick="closeAuth()"
+      class="absolute top-4 right-4 text-zinc-500 hover:text-white text-xl">✕</button>
+
+    <h2 id="authTitle" class="text-3xl font-semibold text-center mb-6">
+      Sign In
+    </h2>
+
+    <form class="space-y-4">
+
+      <input type="email" placeholder="Email"
+        class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 outline-none focus:border-white" />
+
+      <input type="password" placeholder="Password"
+        class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 outline-none focus:border-white" />
+
+      <input id="nameField" type="text" placeholder="Full Name"
+        class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 outline-none focus:border-white hidden" />
+
+      <button type="submit"
+        class="w-full bg-white text-black py-3 rounded-xl font-medium hover:bg-zinc-200 transition">
+        Continue
+      </button>
+    </form>
+
+    <p class="text-center text-zinc-400 mt-6 text-sm">
+      <span id="toggleText">Don't have an account?</span>
+      <button onclick="toggleAuth(event)"
+        class="text-white hover:underline ml-1">
+        Sign up
+      </button>
+    </p>
+
+  </div>
+</div>
+
+<!-- ================= TERMINAL OVERLAY ================= -->
+<div id="terminalOverlay"
+     class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center z-[998]">
+
+  <div class="w-full max-w-3xl bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl p-6 font-mono">
+
+    <div class="text-green-400 text-sm mb-3">
+      Evidan Terminal — type "help"
+    </div>
+
+    <div id="terminalOutput"
+         class="h-64 overflow-y-auto text-sm text-zinc-200 mb-3 space-y-1"></div>
+
+    <div class="flex items-center text-green-400">
+      <span class="mr-2">$</span>
+      <input id="terminalInput"
+             type="text"
+             autocomplete="off"
+             class="flex-1 bg-transparent outline-none text-green-400 caret-green-400" />
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= NAVBAR ================= -->
+<header class="fixed top-0 w-full bg-black/70 backdrop-blur border-b border-zinc-800 z-50">
+  <nav class="max-w-6xl mx-auto flex items-center justify-between px-6 py-3 text-sm">
+    <div class="font-semibold text-lg tracking-tight"> Evidan</div>
+
+    <ul class="hidden md:flex gap-8 text-zinc-300">
+      <li class="hover:text-white cursor-pointer">Overview</li>
+      <li class="hover:text-white cursor-pointer">Cases</li>
+      <li class="hover:text-white cursor-pointer">Evidence</li>
+      <li class="hover:text-white cursor-pointer">Security</li>
+      <li class="hover:text-white cursor-pointer">Support</li>
+    </ul>
+
+    <button onclick="openAuth()"
+      class="bg-white text-black px-4 py-1.5 rounded-full font-medium hover:bg-zinc-200 transition">
+      Sign in
+    </button>
+  </nav>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="pt-36 pb-24 text-center px-6">
+  <h1 class="text-5xl md:text-7xl font-semibold tracking-tight">
+    Secure Evidence.<br />Reimagined.
+  </h1>
+
+  <p class="mt-6 text-xl md:text-2xl text-zinc-300 max-w-2xl mx-auto">
+    A digital evidence system designed for absolute integrity, privacy,
+    and court-ready reliability.
+  </p>
+
+  <div class="mt-8 flex justify-center gap-8 text-lg">
+    <a href="#" class="text-zinc-200 hover:underline">Learn more ›</a>
+    <a href="#" class="text-zinc-200 hover:underline">View demo ›</a>
+  </div>
+
+  <img
+    src="https://t4.ftcdn.net/jpg/15/50/76/41/360_F_1550764141_hElSGoqjYwDY7FtlrF6nmASD8MNRk5FZ.jpg"
+    class="mx-auto mt-16 rounded-3xl shadow-2xl max-w-5xl w-full" />
+</section>
+
+<!-- ================= LIGHT SECTION ================= -->
+<section class="bg-white text-black text-center py-28 px-6">
+  <h2 class="text-4xl md:text-6xl font-semibold">Chain of Custody</h2>
+
+  <p class="mt-4 text-xl text-zinc-700 max-w-2xl mx-auto">
+    Every action is logged, verified, and time-stamped — ensuring complete
+    accountability from collection to courtroom.
+  </p>
+
+  <img
+    src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1600&auto=format&fit=crop"
+    class="mx-auto mt-14 rounded-3xl shadow-xl max-w-5xl w-full" />
+</section>
+
+<!-- ================= GRID ================= -->
+<section class="grid md:grid-cols-2 gap-4 p-4 bg-black">
+
+  <div class="bg-zinc-900 rounded-3xl p-12 text-center">
+    <h3 class="text-3xl font-semibold">Tamper-Proof Storage</h3>
+    <p class="text-zinc-400 mt-2">
+      Cryptographic protection ensures evidence cannot be altered.
+    </p>
+  </div>
+
+  <div class="bg-zinc-900 rounded-3xl p-12 text-center">
+    <h3 class="text-3xl font-semibold">Role-Based Access</h3>
+    <p class="text-zinc-400 mt-2">
+      Only authorized personnel can view or manage sensitive data.
+    </p>
+  </div>
+
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer class="text-center text-zinc-500 text-sm py-14">
+  <p>© 2026 Evidan. All rights reserved.</p>
+</footer>
+
+<!-- ================= SCRIPTS ================= -->
+<script>
+  // ===== AUTH MODAL =====
+  const authModal = document.getElementById("authModal");
+  const authTitle = document.getElementById("authTitle");
+  const toggleText = document.getElementById("toggleText");
+  const nameField = document.getElementById("nameField");
+
+  let isLogin = true;
+
+  function openAuth() {
+    authModal.classList.remove("hidden");
+    authModal.classList.add("flex");
+  }
+
+  function closeAuth() {
+    authModal.classList.add("hidden");
+    authModal.classList.remove("flex");
+  }
+
+  function toggleAuth(e) {
+    e.preventDefault();
+    isLogin = !isLogin;
+
+    if (isLogin) {
+      authTitle.textContent = "Sign In";
+      toggleText.textContent = "Don't have an account?";
+      nameField.classList.add("hidden");
+    } else {
+      authTitle.textContent = "Create Account";
+      toggleText.textContent = "Already have an account?";
+      nameField.classList.remove("hidden");
+    }
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !authModal.classList.contains("hidden")) {
+      closeAuth();
+    }
+  });
+
+  // ===== TERMINAL =====
+  const overlay = document.getElementById("terminalOverlay");
+  const input = document.getElementById("terminalInput");
+  const output = document.getElementById("terminalOutput");
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "\\" && overlay.classList.contains("hidden")) {
+      if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+      e.preventDefault();
+      overlay.classList.remove("hidden");
+      overlay.classList.add("flex");
+      setTimeout(() => input.focus(), 0);
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !overlay.classList.contains("hidden")) {
+      overlay.classList.add("hidden");
+      overlay.classList.remove("flex");
+      input.value = "";
+    }
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const cmd = input.value.trim();
+      if (!cmd) return;
+
+      print(`$ ${cmd}`);
+
+      switch (cmd.toLowerCase()) {
+        case "help":
+          print("Commands: help, clear, about, exit");
+          break;
+        case "clear":
+          output.innerHTML = "";
+          break;
+        case "about":
+          print("Evidan Secure Evidence System");
+          break;
+        case "exit":
+          overlay.classList.add("hidden");
+          overlay.classList.remove("flex");
+          break;
+        default:
+          print(`Command not found: ${cmd}`);
+      }
+
+      input.value = "";
+      output.scrollTop = output.scrollHeight;
+    }
+  });
+
+  function print(text) {
+    const line = document.createElement("div");
+    line.textContent = text;
+    output.appendChild(line);
+  }
+</script>
+
+</body>
+</html>
