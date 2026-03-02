@@ -1,0 +1,41 @@
+<script>
+  const authModal = document.getElementById("authModal");
+  const authTitle = document.getElementById("authTitle");
+  const toggleText = document.getElementById("toggleText");
+  const nameField = document.getElementById("nameField");
+
+  let isLogin = true;
+
+  function openAuth() {
+    authModal.classList.remove("hidden");
+    authModal.classList.add("flex");
+  }
+
+  function closeAuth() {
+    authModal.classList.add("hidden");
+    authModal.classList.remove("flex");
+  }
+
+  function toggleAuth(e) {
+    e.preventDefault();
+
+    isLogin = !isLogin;
+
+    if (isLogin) {
+      authTitle.textContent = "Sign In";
+      toggleText.textContent = "Don't have an account?";
+      nameField.classList.add("hidden");
+    } else {
+      authTitle.textContent = "Create Account";
+      toggleText.textContent = "Already have an account?";
+      nameField.classList.remove("hidden");
+    }
+  }
+
+  // ESC closes modal
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !authModal.classList.contains("hidden")) {
+      closeAuth();
+    }
+  });
+</script>
