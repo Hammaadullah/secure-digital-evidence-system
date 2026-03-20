@@ -44,7 +44,7 @@ func (c *EnvDBConfig) GetPassword() string {
 }
 
 func (c *EnvDBConfig) GetDatabase() string {
-	return c.password
+	return c.database
 }
 
 func (c *EnvDBConfig) GetMaxOpenConns() int32 {

@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -14,7 +15,12 @@ type Storage struct {
 }
 
 func NewStorage(config *config.EnvDBConfig, setLimits bool) (*Storage, error) {
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=false", config.GetHost(), config.GetPort(), config.GetUsername(), config.GetPassword(), config.GetDatabase())
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		config.GetHost(),
+		config.GetPort(),
+		config.GetUsername(),
+		config.GetPassword(),
+		config.GetDatabase())
 	const tries = 5
 	const timeout = 2
 
