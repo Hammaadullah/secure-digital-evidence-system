@@ -7,6 +7,7 @@ import (
 
 type EvidenceRepo interface {
 	InsertEvidenceHash(ctx context.Context, e store.EvidenceDetails) error
+	GetEvidenceHash(ctx context.Context, evidenceId string) (*store.EvidenceHash, error)
 }
 
 type CustodyRepo interface {

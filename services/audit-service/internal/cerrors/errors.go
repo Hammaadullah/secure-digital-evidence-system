@@ -31,4 +31,9 @@ var (
 		Error:    errors.New("not null violation"),
 		HTTPCode: 409,
 	}
+	ErrFileNotFound = CustomError{
+		Code:     "",
+		Error:    errors.New("file not found"),
+		HTTPCode: 404,
+	}
 )

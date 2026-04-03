@@ -57,6 +57,7 @@ func main() {
 
 	// Routes.
 	router.POST("/api/v1/evidence/register", handler.RegisterEvidence)
+	router.GET("/api/v1/evidence/:id/verify", handler.VerifyEvidence)
 
 	log.Printf("Service running on : %s\n", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", port), router))

@@ -46,3 +46,11 @@ func (h *Handler) RegisterEvidence(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{"message": "evidence registered successfully"})
 }
+
+func (h *Handler) VerifyEvidence(c *gin.Context) {
+	evidenceID := c.Param("id")
+	if evidenceID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing evidence id"})
+		return
+	}
+}

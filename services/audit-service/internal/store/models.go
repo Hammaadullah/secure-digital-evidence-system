@@ -7,6 +7,11 @@ type EvidenceDetails struct {
 	FileHash         string
 }
 
+type EvidenceHash struct {
+	FileHash  string
+	Algorithm string
+}
+
 type EvidenceRegistrationDetails struct {
 	EvidenceID       int64  `json:"evidence_id" binding:"required"`
 	EvidencePublicID string `json:"evidence_public_id" binding:"required"`

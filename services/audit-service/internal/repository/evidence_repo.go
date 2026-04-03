@@ -65,3 +65,27 @@ func (r *evidenceRepo) InsertEvidenceHash(ctx context.Context, e store.EvidenceD
 
 	return nil
 }
+
+// Gets the file hash and algorithm for a given evidence ID.
+func (r *evidenceRepo) GetEvidenceHash(ctx context.Context, evidenceID string) (*store.EvidenceHash, error) {
+	var e store.EvidenceHash
+	query := `
+		SELECT file_hash, algorithm
+		FROM integrity_schema.evidence_hashes
+		WHERE evidence_id = @evidenceID
+	`
+
+	args := pgx.NamedArgs{
+		"evidenceID": evidenceID,
+	}
+
+	if err := r.q(ctx).QueryRow(ctx, query, args).Scan(&e.FileHash, &e.Algorithm); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, cerrors.ErrEvidenceNotFound.Error
+		}
+		log.Printf("error: failed to get evidence hash, %v", err)
+		return nil, fmt.Errorf("error: failed to get evidence hash, %w", err)
+	}
+
+	return &e, nil
+}
