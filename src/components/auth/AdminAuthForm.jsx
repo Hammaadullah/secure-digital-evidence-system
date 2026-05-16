@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { loginUser, registerAdmin } from '../../api/auth';
+import { loginAdmin, registerAdmin } from '../../api/auth';
 import { Field, ErrorBanner, SuccessBanner } from './FormParts';
 import styles from './AdminAuthForm.module.css';
 import '../../auth.css';
@@ -18,7 +18,7 @@ function AdminLoginForm() {
     if (!form.email || !form.password) { setError('EMAIL AND PASSWORD ARE REQUIRED'); return; }
     setError(''); setLoading(true);
     try {
-      const data = await loginUser(form);
+      const data = await loginAdmin(form);
       login({ id: data.user_id, name: data.user_name, role: 'admin' }, data.access_token);
     } catch (err) {
       setError(err.message.toUpperCase());
@@ -55,10 +55,10 @@ function AdminRegisterForm() {
 
   const validate = () => {
     const errs = {};
-    if (!form.orgName.trim())        errs.orgName = 'Required';
-    if (!form.name.trim())           errs.name = 'Required';
-    if (!form.email.includes('@'))   errs.email = 'Valid email required';
-    if (form.password.length < 8)    errs.password = 'Min 8 characters';
+    if (!form.orgName.trim())              errs.orgName = 'Required';
+    if (!form.name.trim())                 errs.name = 'Required';
+    if (!form.email.includes('@'))         errs.email = 'Valid email required';
+    if (form.password.length < 8)          errs.password = 'Min 8 characters';
     if (form.password !== form.confirmPassword) errs.confirmPassword = 'Passwords do not match';
     return errs;
   };

@@ -1,133 +1,177 @@
 import { useState, useEffect } from 'react';
 import { AppLayout } from '../components/AppLayout';
 import { Field, ErrorBanner, SuccessBanner } from '../components/auth/FormParts';
-import { getDepartments, createDepartment, createMember, getMembers, getCases, createCase, assignUserToCase } from '../api/auth';
+import { createMember, getCases, createCase, getCaseUsers } from '../api/auth';
 
 const NAV = [
   { type: 'section', label: 'Operations' },
-  { id: 'overview',    label: 'Overview' },
-  { id: 'cases',       label: 'Case Management' },
+  { id: 'overview', label: 'Overview' },
+  { id: 'cases',    label: 'Case Management' },
   { type: 'section', label: 'Organization' },
-  { id: 'departments', label: 'Departments' },
-  { id: 'members',     label: 'Members' },
+  { id: 'members',  label: 'Members' },
   { type: 'section', label: 'Security' },
-  { id: 'audit',       label: 'Audit Log' },
+  { id: 'audit',    label: 'Audit Log' },
 ];
 
-// ── Reusable stat card ─────────────────────────────────────────────────────────
-function StatCard({ value, label, color = 'var(--accent)' }) {
+function SectionTitle({ children }) {
   return (
-    <div className="card" style={{ textAlign: 'left' }}>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 600, color, lineHeight: 1, marginBottom: 6 }}>
-        {value}
-      </div>
-      <div style={{ fontFamily: 'var(--cond)', fontSize: 11, letterSpacing: '0.08em', color: 'var(--text2)', textTransform: 'uppercase' }}>
-        {label}
-      </div>
+    <div style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--ink3)', textTransform: 'uppercase', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--rule2)' }}>
+      {children}
+    </div>
+  );
+}
+
+function Row({ children, style, onClick }) {
+  return (
+    <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid var(--rule2)', cursor: onClick ? 'pointer' : 'default', ...style }}>
+      {children}
+    </div>
+  );
+}
+
+function Empty({ children }) {
+  return (
+    <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink3)', padding: '24px 0', textAlign: 'center' }}>
+      {children}
+    </div>
+  );
+}
+
+const STATUS_COLORS = {
+  OPEN:        { bg: 'rgba(255,255,255,0.06)', color: '#ccc' },
+  IN_PROGRESS: { bg: 'rgba(255,170,0,0.1)',    color: '#ffaa00' },
+  CLOSED:      { bg: 'rgba(255,255,255,0.04)', color: '#555' },
+  ARCHIVED:    { bg: 'rgba(255,255,255,0.04)', color: '#555' },
+};
+
+function Badge({ status }) {
+  const s = STATUS_COLORS[status?.toUpperCase()] || STATUS_COLORS.OPEN;
+  return (
+    <span style={{ display: 'inline-block', padding: '2px 8px', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: '0.06em', background: s.bg, color: s.color, textTransform: 'uppercase' }}>
+      {status || 'OPEN'}
+    </span>
+  );
+}
+
+function StatCard({ value, label }) {
+  return (
+    <div className="card">
+      <div style={{ fontFamily: 'Stardom, serif', fontSize: 40, color: 'var(--ink)', lineHeight: 1, marginBottom: 8 }}>{value}</div>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</div>
     </div>
   );
 }
 
 // ── Overview ──────────────────────────────────────────────────────────────────
-function Overview({ cases, members, departments }) {
+
+function Overview({ cases }) {
   return (
     <div className="animate-slide">
-      <div className="page-title">ADMIN OVERVIEW</div>
-      <div className="page-sub">ORGANIZATION COMMAND CENTRE</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
-        <StatCard value={cases.length}       label="Total Cases"   color="var(--accent)" />
-        <StatCard value={members.length}     label="Members"       color="var(--success)" />
-        <StatCard value={departments.length} label="Departments"   color="var(--warn)" />
+      <div className="page-title">Admin Overview</div>
+      <div className="page-sub">Organization Command Centre</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 24 }}>
+        <StatCard value={cases.length} label="Total Cases" />
+        <StatCard value={cases.filter(c => c.status === 'OPEN' || !c.status).length} label="Open Cases" />
       </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div className="card">
-          <SectionTitle>Recent Cases</SectionTitle>
-          {cases.length === 0
-            ? <Empty>No cases yet</Empty>
-            : cases.slice(0, 5).map((c) => (
-              <Row key={c.public_id}>
-                <Mono>{c.public_id?.slice(0, 8)}...</Mono>
-                <span style={{ flex: 1, fontSize: 12 }}>{c.title}</span>
-                <Badge type={c.status?.toLowerCase()}>{c.status}</Badge>
-              </Row>
-            ))}
-        </div>
-
-        <div className="card">
-          <SectionTitle>Departments</SectionTitle>
-          {departments.length === 0
-            ? <Empty>No departments yet — create one below</Empty>
-            : departments.map((d) => (
-              <Row key={d.id}>
-                <span className="navDot" style={{ width: 4, height: 4, background: 'var(--accent)', flexShrink: 0 }} />
-                <span style={{ fontSize: 13 }}>{d.name}</span>
-              </Row>
-            ))}
-        </div>
+      <div className="card">
+        <SectionTitle>Recent Cases</SectionTitle>
+        {cases.length === 0
+          ? <Empty>No cases yet — create one in Case Management</Empty>
+          : cases.slice(0, 6).map(c => (
+            <Row key={c.public_id}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink3)', flexShrink: 0, width: 80 }}>{c.public_id?.slice(0, 8)}...</span>
+              <span style={{ flex: 1, fontSize: 13 }}>{c.title}</span>
+              <Badge status={c.status} />
+            </Row>
+          ))}
       </div>
     </div>
   );
 }
 
-// ── Departments ───────────────────────────────────────────────────────────────
-function Departments({ departments, onRefresh }) {
-  const [name, setName] = useState('');
+// ── Cases ─────────────────────────────────────────────────────────────────────
+
+function Cases({ cases, onRefresh }) {
+  const [form, setForm] = useState({ title: '', description: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(null);
+  const [caseUsers, setCaseUsers] = useState({});
+
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!name.trim()) { setError('DEPARTMENT NAME IS REQUIRED'); return; }
+    if (!form.title.trim()) { setError('TITLE IS REQUIRED'); return; }
     setError(''); setSuccess(''); setLoading(true);
     try {
-      await createDepartment({ name: name.trim() });
-      setSuccess(`DEPARTMENT "${name.toUpperCase()}" CREATED`);
-      setName('');
+      await createCase({ title: form.title, description: form.description });
+      setSuccess('CASE CREATED');
+      setForm({ title: '', description: '' });
       onRefresh();
     } catch (err) {
       setError(err.message.toUpperCase());
-    } finally {
-      setLoading(false);
+    } finally { setLoading(false); }
+  };
+
+  const expand = async (caseId) => {
+    if (expanded === caseId) { setExpanded(null); return; }
+    setExpanded(caseId);
+    if (!caseUsers[caseId]) {
+      try {
+        const users = await getCaseUsers(caseId);
+        setCaseUsers(u => ({ ...u, [caseId]: users }));
+      } catch { setCaseUsers(u => ({ ...u, [caseId]: [] })); }
     }
   };
 
   return (
     <div className="animate-slide">
-      <div className="page-title">DEPARTMENTS</div>
-      <div className="page-sub">CREATE AND MANAGE ORGANIZATIONAL DEPARTMENTS</div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16 }}>
-        {/* List */}
+      <div className="page-title">Case Management</div>
+      <div className="page-sub">Create and manage investigation cases</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
         <div className="card">
-          <SectionTitle>All Departments</SectionTitle>
-          {departments.length === 0
-            ? <Empty>No departments yet. Create your first one →</Empty>
-            : departments.map((d) => (
-              <Row key={d.id} style={{ padding: '10px 0' }}>
-                <div style={{ width: 32, height: 32, background: 'var(--accent-dim)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--cond)', fontSize: 13, fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>
-                  {d.name[0].toUpperCase()}
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{d.name}</div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--text2)', marginTop: 2 }}>ID {d.id}</div>
-                </div>
-              </Row>
+          <SectionTitle>All Cases ({cases.length})</SectionTitle>
+          {cases.length === 0
+            ? <Empty>No cases yet. Create your first case →</Empty>
+            : cases.map(c => (
+              <div key={c.public_id}>
+                <Row onClick={() => expand(c.public_id)}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink3)', width: 80, flexShrink: 0 }}>{c.public_id?.slice(0, 8)}...</span>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{c.title}</span>
+                  <Badge status={c.status} />
+                  <span style={{ color: 'var(--ink3)', fontSize: 12, marginLeft: 4 }}>{expanded === c.public_id ? '▾' : '▸'}</span>
+                </Row>
+                {expanded === c.public_id && (
+                  <div style={{ padding: '12px 0 12px 90px', animation: 'fade-in 0.2s ease' }}>
+                    {c.description && <div style={{ fontSize: 12, color: 'var(--ink2)', marginBottom: 10 }}>{c.description}</div>}
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--ink3)', marginBottom: 6, letterSpacing: '0.08em' }}>ASSIGNED USERS</div>
+                    {!(caseUsers[c.public_id]?.length)
+                      ? <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink3)' }}>No users assigned</div>
+                      : caseUsers[c.public_id].map(u => (
+                        <div key={u.public_id} style={{ fontSize: 12, color: 'var(--ink2)', marginBottom: 4 }}>
+                          {u.name} <span style={{ color: 'var(--ink3)', fontFamily: 'var(--mono)', fontSize: 9 }}>({u.assigned_role})</span>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
             ))}
         </div>
-
-        {/* Create form */}
         <div className="card" style={{ alignSelf: 'start' }}>
-          <SectionTitle>New Department</SectionTitle>
+          <SectionTitle>New Case</SectionTitle>
           <ErrorBanner message={error} />
           <SuccessBanner message={success} />
           <form onSubmit={submit}>
-            <Field label="Department Name">
-              <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Cybercrime Unit" />
+            <Field label="Title">
+              <input className="input" value={form.title} onChange={set('title')} placeholder="Case title" />
+            </Field>
+            <Field label="Description">
+              <textarea className="input" value={form.description} onChange={set('description')} placeholder="Optional details..." style={{ height: 80, resize: 'none' }} />
             </Field>
             <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-              {loading ? '[ CREATING... ]' : '[ CREATE DEPARTMENT ]'}
+              {loading ? 'Creating...' : 'Create Case'}
             </button>
           </form>
         </div>
@@ -137,18 +181,20 @@ function Departments({ departments, onRefresh }) {
 }
 
 // ── Members ────────────────────────────────────────────────────────────────────
-function Members({ members, departments, onRefresh }) {
-  const [form, setForm] = useState({ name: '', email: '', password: '', deptId: '', role: 'user' });
+
+function Members({ onRefresh }) {
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'user' });
   const [errors, setErrors] = useState({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [created, setCreated] = useState([]);
 
-  const set = (k) => (e) => { setForm((f) => ({ ...f, [k]: e.target.value })); setErrors((er) => ({ ...er, [k]: '' })); };
+  const set = (k) => (e) => { setForm(f => ({ ...f, [k]: e.target.value })); setErrors(er => ({ ...er, [k]: '' })); };
 
   const validate = () => {
     const errs = {};
-    if (!form.name.trim())     errs.name = 'Name is required';
+    if (!form.name.trim())         errs.name = 'Required';
     if (!form.email.includes('@')) errs.email = 'Valid email required';
     if (form.password.length < 6)  errs.password = 'Min 6 characters';
     return errs;
@@ -160,47 +206,42 @@ function Members({ members, departments, onRefresh }) {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setError(''); setSuccess(''); setLoading(true);
     try {
-      await createMember({ name: form.name, email: form.email, password: form.password, deptId: form.deptId || null, role: form.role });
-      setSuccess(`MEMBER "${form.name.toUpperCase()}" CREATED — CREDENTIALS SET`);
-      setForm({ name: '', email: '', password: '', deptId: '', role: 'user' });
+      await createMember({ name: form.name, email: form.email, password: form.password, role: form.role });
+      setSuccess(`MEMBER "${form.name.toUpperCase()}" CREATED`);
+      setCreated(c => [...c, { name: form.name, email: form.email, role: form.role }]);
+      setForm({ name: '', email: '', password: '', role: 'user' });
       onRefresh();
     } catch (err) {
       setError(err.message.toUpperCase());
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
     <div className="animate-slide">
-      <div className="page-title">MEMBERS</div>
-      <div className="page-sub">ADMIN CREATES AND MANAGES ALL USER CREDENTIALS</div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16 }}>
-        {/* List */}
+      <div className="page-title">Members</div>
+      <div className="page-sub">Admin creates and manages all user credentials</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
         <div className="card">
-          <SectionTitle>All Members ({members.length})</SectionTitle>
-          {members.length === 0
-            ? <Empty>No members yet. Add your first officer →</Empty>
-            : members.map((m) => (
-              <Row key={m.public_id} style={{ padding: '10px 0' }}>
-                <div style={{ width: 36, height: 36, background: 'var(--accent-dim)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--cond)', fontSize: 12, fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>
-                  {m.name?.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+          <SectionTitle>Created This Session ({created.length})</SectionTitle>
+          {created.length === 0
+            ? <Empty>Members you create will appear here.</Empty>
+            : created.map((m, i) => (
+              <Row key={i}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink2)', flexShrink: 0 }}>
+                  {m.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 500 }}>{m.name}</div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--text2)', marginTop: 2 }}>{m.email}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--ink3)', marginTop: 2 }}>{m.email}</div>
                 </div>
-                <Badge type={m.is_active ? 'active' : 'inactive'}>{m.is_active ? 'ACTIVE' : 'INACTIVE'}</Badge>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--ink3)', textTransform: 'uppercase' }}>{m.role}</span>
               </Row>
             ))}
         </div>
-
-        {/* Create form */}
         <div className="card" style={{ alignSelf: 'start' }}>
           <SectionTitle>Add Member</SectionTitle>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--text2)', marginBottom: 14, lineHeight: 1.6 }}>
-            You set the credentials. The member uses these to log in as a User.
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--ink3)', marginBottom: 14, lineHeight: 1.7 }}>
+            You set the credentials. The member logs in as Officer / User.
           </div>
           <ErrorBanner message={error} />
           <SuccessBanner message={success} />
@@ -214,12 +255,6 @@ function Members({ members, departments, onRefresh }) {
             <Field label="Password" error={errors.password}>
               <input className="input" type="password" value={form.password} onChange={set('password')} placeholder="Set their password" />
             </Field>
-            <Field label="Department (optional)">
-              <select className="select" value={form.deptId} onChange={set('deptId')}>
-                <option value="">No department</option>
-                {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-            </Field>
             <Field label="Role">
               <select className="select" value={form.role} onChange={set('role')}>
                 <option value="user">Officer / User</option>
@@ -228,7 +263,7 @@ function Members({ members, departments, onRefresh }) {
               </select>
             </Field>
             <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-              {loading ? '[ CREATING... ]' : '[ CREATE MEMBER ]'}
+              {loading ? 'Creating...' : 'Create Member'}
             </button>
           </form>
         </div>
@@ -237,155 +272,37 @@ function Members({ members, departments, onRefresh }) {
   );
 }
 
-// ── Cases ──────────────────────────────────────────────────────────────────────
-function Cases({ cases, members, departments, onRefresh }) {
-  const [form, setForm] = useState({ title: '', description: '' });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
+// ── Audit ──────────────────────────────────────────────────────────────────────
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!form.title.trim()) { setError('CASE TITLE IS REQUIRED'); return; }
-    setError(''); setSuccess(''); setLoading(true);
-    try {
-      await createCase({ title: form.title, description: form.description });
-      setSuccess('CASE CREATED SUCCESSFULLY');
-      setForm({ title: '', description: '' });
-      onRefresh();
-    } catch (err) {
-      setError(err.message.toUpperCase());
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="animate-slide">
-      <div className="page-title">CASE MANAGEMENT</div>
-      <div className="page-sub">CREATE CASES AND ASSIGN TO DEPARTMENTS AND MEMBERS</div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16 }}>
-        {/* List */}
-        <div className="card">
-          <SectionTitle>All Cases ({cases.length})</SectionTitle>
-          {cases.length === 0
-            ? <Empty>No cases yet. Create your first case →</Empty>
-            : cases.map((c) => (
-              <div key={c.public_id} style={{ padding: '12px 0', borderBottom: '1px solid var(--border2)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                  <Mono style={{ fontSize: 10, color: 'var(--accent)' }}>{c.public_id?.slice(0, 8)}...</Mono>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{c.title}</span>
-                  <Badge type={c.status?.toLowerCase()}>{c.status}</Badge>
-                </div>
-                {c.description && <div style={{ fontSize: 11, color: 'var(--text2)', paddingLeft: 0 }}>{c.description}</div>}
-              </div>
-            ))}
-        </div>
-
-        {/* Create */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div className="card">
-            <SectionTitle>New Case</SectionTitle>
-            <ErrorBanner message={error} />
-            <SuccessBanner message={success} />
-            <form onSubmit={submit}>
-              <Field label="Case Title">
-                <input className="input" value={form.title} onChange={set('title')} placeholder="Brief case title" />
-              </Field>
-              <Field label="Description">
-                <textarea className="input" value={form.description} onChange={set('description')} placeholder="Optional details..." style={{ height: 72, resize: 'none' }} />
-              </Field>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-                {loading ? '[ CREATING... ]' : '[ CREATE CASE ]'}
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Audit placeholder ──────────────────────────────────────────────────────────
 function Audit() {
   return (
     <div className="animate-slide">
-      <div className="page-title">AUDIT LOG</div>
-      <div className="page-sub">IMMUTABLE ACCESS AND ACTION LOG</div>
+      <div className="page-title">Audit Log</div>
+      <div className="page-sub">Immutable access and action log</div>
       <div className="card">
-        <Empty>Connect to audit-service endpoint to view logs.</Empty>
+        <Empty>Audit log endpoint not yet exposed via HTTP.</Empty>
       </div>
     </div>
   );
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-function SectionTitle({ children }) {
-  return (
-    <div style={{ fontFamily: 'var(--cond)', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: 'var(--text2)', textTransform: 'uppercase', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border2)' }}>
-      {children}
-    </div>
-  );
-}
+// ── Root ───────────────────────────────────────────────────────────────────────
 
-function Row({ children, style }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border2)', ...style }}>
-      {children}
-    </div>
-  );
-}
-
-function Mono({ children, style }) {
-  return <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text2)', ...style }}>{children}</span>;
-}
-
-function Empty({ children }) {
-  return <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--text2)', padding: '20px 0', textAlign: 'center' }}>{children}</div>;
-}
-
-const BADGE_COLORS = {
-  active:      { bg: 'rgba(0,229,160,0.1)',  color: 'var(--success)' },
-  inactive:    { bg: 'rgba(90,122,144,0.1)', color: 'var(--text2)' },
-  open:        { bg: 'rgba(0,200,255,0.1)',  color: 'var(--accent)' },
-  in_progress: { bg: 'rgba(255,170,0,0.1)', color: 'var(--warn)' },
-  closed:      { bg: 'rgba(90,122,144,0.1)', color: 'var(--text2)' },
-  archived:    { bg: 'rgba(90,122,144,0.1)', color: 'var(--text2)' },
-};
-
-function Badge({ type, children }) {
-  const s = BADGE_COLORS[type] || BADGE_COLORS.open;
-  return (
-    <span style={{ display: 'inline-block', padding: '2px 8px', fontFamily: 'var(--mono)', fontSize: 9, fontWeight: 600, letterSpacing: '0.06em', borderRadius: 1, background: s.bg, color: s.color, textTransform: 'uppercase' }}>
-      {children}
-    </span>
-  );
-}
-
-// ── Root AdminDashboard ────────────────────────────────────────────────────────
 export function AdminDashboard() {
   const [page, setPage] = useState('overview');
   const [cases, setCases] = useState([]);
-  const [members, setMembers] = useState([]);
-  const [departments, setDepartments] = useState([]);
 
   const refresh = async () => {
     try { setCases(await getCases()); } catch {}
-    try { setMembers(await getMembers()); } catch {}
-    try { setDepartments(await getDepartments()); } catch {}
   };
 
   useEffect(() => { refresh(); }, []);
 
   const pages = {
-    overview:    <Overview    cases={cases} members={members} departments={departments} />,
-    cases:       <Cases       cases={cases} members={members} departments={departments} onRefresh={refresh} />,
-    departments: <Departments departments={departments} onRefresh={refresh} />,
-    members:     <Members     members={members} departments={departments} onRefresh={refresh} />,
-    audit:       <Audit />,
+    overview: <Overview cases={cases} />,
+    cases:    <Cases cases={cases} onRefresh={refresh} />,
+    members:  <Members onRefresh={refresh} />,
+    audit:    <Audit />,
   };
 
   return (
@@ -394,3 +311,4 @@ export function AdminDashboard() {
     </AppLayout>
   );
 }
+
